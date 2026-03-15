@@ -1,0 +1,38 @@
+stages:
+  - build
+  - deploy
+
+build_app:
+  stage: build
+  script:
+    - set -e
+    - echo "=== Build Stage ==="
+    - echo "Validating application files..."
+    - test -f app/index.html && echo "index.html OK" || exit 1
+    - echo "Build complete"
+
+trigger_awx_deployment:
+  stage: deploy
+  script:
+    - set -e
+    - echo "=== Deploy Stage ==="
+    - echo "Triggering AWX deployment job..."
+    - |
+      HTTP_STATUS=$(curl --max-time 20 -s -o /tmp/awx_response.json -w "%{http_code}" \
+        -X POST \
+        -H "Authorization: Bearer ${AWX_TOKEN}" \
+        -H "Content-Type: application/json" \
+        http://192.168.111.30:32650/api/v2/job_templates/${AWX_JOB_TEMPLATE_ID}/launch/ \
+        -d '{}')
+      echo "AWX API response code: ${HTTP_STATUS}"
+      cat /tmp/awx_response.json
+      if [ "$HTTP_STATUS" != "201" ]; then
+        echo "ERROR: AWX job launch failed with HTTP ${HTTP_STATUS}"
+        exit 1
+      fi
+      echo "AWX job launched successfully"
+  only:
+    - main
+  needs:
+    - build_app
+

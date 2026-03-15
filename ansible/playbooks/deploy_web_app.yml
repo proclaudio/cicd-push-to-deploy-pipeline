@@ -1,0 +1,79 @@
+---
+- name: Deploy Web Application
+  hosts: dev-web-01
+  become: yes
+
+  vars:
+    gitlab_repo: "http://192.168.111.10/ladmin/web-app.git"
+    releases_dir: /var/www/releases
+    current_link: /var/www/current
+    web_root: /var/www/html
+
+  tasks:
+
+    - name: Ensure git is installed
+      ansible.builtin.package:
+        name: git
+        state: present
+
+    - name: Ensure httpd is installed
+      ansible.builtin.package:
+        name: httpd
+        state: present
+
+    - name: Ensure httpd is started and enabled
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Create releases directory
+      ansible.builtin.file:
+        path: "{{ releases_dir }}"
+        state: directory
+        owner: apache
+        group: apache
+        mode: '0755'
+
+    - name: Set release timestamp
+      ansible.builtin.set_fact:
+        release_timestamp: "{{ ansible_date_time.epoch }}"
+
+    - name: Pull latest code from GitLab
+      ansible.builtin.git:
+        repo: "{{ gitlab_repo }}"
+        dest: "{{ releases_dir }}/{{ release_timestamp }}"
+        version: main
+        force: yes
+        update: yes
+        depth: 1
+
+    - name: Update current symlink to new release
+      ansible.builtin.file:
+        src: "{{ releases_dir }}/{{ release_timestamp }}/app"
+        dest: "{{ current_link }}"
+        state: link
+        force: yes
+
+    - name: Point web root to current release
+      ansible.builtin.file:
+        src: "{{ current_link }}"
+        dest: "{{ web_root }}"
+        state: link
+        force: yes
+
+    - name: Restart httpd to apply changes
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
+
+    - name: Verify web service is responding
+      ansible.builtin.uri:
+        url: http://192.168.111.101
+        status_code: 200
+      register: result
+
+    - name: Print deployment result
+      ansible.builtin.debug:
+        msg: "Deployment successful - HTTP {{ result.status }} - Release {{ release_timestamp }}"
+

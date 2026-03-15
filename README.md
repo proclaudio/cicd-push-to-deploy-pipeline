@@ -1,4 +1,3 @@
-# cicd-push-to-deploy-pipeline
 # CI/CD Push-to-Deploy Pipeline
 
 Automated GitOps deployment pipeline integrating GitLab CI with AWX (Ansible Automation
