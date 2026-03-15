@@ -1,8 +1,8 @@
 # CI/CD Push-to-Deploy Pipeline
 
-Automated GitOps deployment pipeline integrating GitLab CI with AWX (Ansible Automation
-Platform). A single `git push` triggers a two-stage pipeline that calls the AWX API,
-which runs an Ansible playbook pulling and deploying the application to a Rocky Linux server.
+Enterprise-style GitOps deployment pipeline integrating GitLab CI with AWX
+(Ansible Automation Platform). A single `git push` automatically triggers
+infrastructure automation and deploys a web application to a Rocky Linux server.
 
 ---
 
@@ -18,7 +18,15 @@ flowchart TD
     F --> G[Ansible Playbook]
     G --> H[dev-web-01 Deployment]
 ```
+## Quick Demo
 
+1. Developer pushes code to GitLab
+2. GitLab CI pipeline starts automatically
+3. GitLab Runner executes the deploy stage
+4. AWX API is called to launch the Ansible job template
+5. Ansible pulls the latest code and deploys it to dev-web-01
+
+Result: the application is updated automatically with zero manual intervention.
 ---
 
 ## Technologies
